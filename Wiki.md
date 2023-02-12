@@ -21,6 +21,17 @@ zum testen der Variablen `printenv | grep -i ROS`
 ## Good to know
 - Wenn der GPS Empfänger kein Signal bzw. nicht genügend Satelliten empfängt gibt es kein Output (!!sollte im Code beachtet werden!!)
 
+## Node erstellen
+1. in den Workspace wechseln, wen nicht vorhanden erstellen mit `mkdir -p ~/NAME/src`
+2. Package erstellen `ros2 pkg create --build-type ament_python py_pubsub`
+3. Die eigenen Python Datein kommen in das Package
+4. Entrypoint setzen (Finden der startmethode der Pythondatei) in der setup.py im Node
+ 
+`entry_points={
+        'console_scripts': [
+                'talker = py_pubsub.publisher_member_function:main',
+        ],
+},`
 
-## Wie kommuniziere ich im Netzwerk mit Talker und Listener 
-- 
+5. Builden des Package im Workspace `colcon build` (mit `--package-select NAME` können packages einzelnt gebuildet werden um Zeit zu sparen) 
+6. Node ausführen wie in "Starten einer Node" beschrieben
