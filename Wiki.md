@@ -9,3 +9,7 @@ Vor jedem start sind bestimmte bedingungen herzustellen
 
 ## Starten einer Node
 - ros run 'Package' 'Node' `ros2 run bluerov_pkg gps`
+
+## Good to know
+- Wenn der GPS Empfänger kein Signal bzw. nicht genügend Satelliten empfängt gibt es kein Output (!!sollte im Code beachtet werden!!)
+- 
