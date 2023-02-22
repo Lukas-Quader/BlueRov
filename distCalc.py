@@ -60,11 +60,13 @@ def getDestination(latitude, longitude, bearing, speed, time):
 def main(args=None):
     lat1 = 53.870004
     lon1 = 10.699840
+    
+    # Tests
     newPosition = getDestination(lat1, lon1, 90, 20, 3600)
     lat2 = newPosition[0]
     lon2 = newPosition[1]
     dist = getDistance(lat1, lon1, lat2, lon2)
-    
+   
     for x in range(6): 
        newPosition = getDestination(lat1, lon1, 90 + 10 * x, 10 * x, 1) 
        print(newPosition)
