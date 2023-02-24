@@ -1,5 +1,29 @@
+import rclpy
+import time
 from numpy import sin, cos, arccos, pi, round
 from math import sin, cos, atan2, sqrt, radians, asin, degrees
+from rclpy.node import Node
+from std_msgs.msg import String
+
+gps_str = "Hallo Welt"
+
+#publish-shit
+class MinimalSubscriber(Node):
+
+    def __init__(self):
+        super().__init__('minimal_subscriber')
+        self.subscription = self.create_subscription(
+            String,
+            'gps_data_topic',
+            self.listener_callback,
+            10)
+        self.subscription  # prevent unused variable warning
+
+    def listener_callback(self, msg):
+        global gps_str
+        gps_str = str(msg.data)
+        #self.get_logger().info('I heard: "%s"' % msg.data)
+
 
 def rad2deg(radians):
     degrees = radians * 180 / pi
@@ -58,22 +82,57 @@ def getDestination(latitude, longitude, bearing, speed, time):
     
 
 def main(args=None):
-    lat1 = 53.870004
-    lon1 = 10.699840
+    #lat1 = 53.870004
+    #lon1 = 10.699840
+    #newPosition = getDestination(lat1, lon1, 90, 20, 3600)
+    #lat2 = newPosition[0]
+    #lon2 = newPosition[1]
+    #dist = getDistance(lat1, lon1, lat2, lon2)
+    #
+    #for x in range(6): 
+    #   newPosition = getDestination(lat1, lon1, 90 + 10 * x, 10 * x, 1) 
+    #   print(newPosition)
+#
+    #print(str(dist) + ' m')
+    #print(newPosition)
+    global gps_str
+    newPosition = (50.0,10.0)
     
-    # Tests
-    newPosition = getDestination(lat1, lon1, 90, 20, 3600)
-    lat2 = newPosition[0]
-    lon2 = newPosition[1]
-    dist = getDistance(lat1, lon1, lat2, lon2)
-   
-    for x in range(6): 
-       newPosition = getDestination(lat1, lon1, 90 + 10 * x, 10 * x, 1) 
-       print(newPosition)
 
-    print(str(dist) + ' m')
-    print(newPosition)
 
+    
+    koppel = 0
+    while True:
+        rclpy.init(args=args)
+        minimal_subscriber = MinimalSubscriber()
+        time.sleep(1)
+        rclpy.spin_once(minimal_subscriber, executor=None, timeout_sec=0)
+        minimal_subscriber.destroy_node()
+        rclpy.shutdown()
+        gps_data = gps_str.split()
+        if gps_data[0] == "timeout":
+            koppel += 1
+            newPosition = getDestination(newPosition[0], newPosition[1], 90, 20, 1)
+            print("No Signal")
+            oldPosition = newPosition
+        else:
+            if len(gps_data) >= 4:
+                # lat und lon
+                lat1 = float(gps_data[2])
+                lon1 = float(gps_data[3])
+                newPosition = (lat1, lon1)
+                if koppel:
+                    distance = getDistance(oldPosition[0], oldPosition[1], newPosition[0], newPosition[1]) 
+                    print("Abweichung Koppelnavigation zum realen GPS nach "+ str(koppel) + "sek: " + str(distance) + "m" )
+                    koppel = 0                   
+        print(newPosition)
+         
+
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    minimal_subscriber.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':
