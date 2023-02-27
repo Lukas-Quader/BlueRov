@@ -1,9 +1,10 @@
 import rclpy
 import serial
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String # Übertragung der Daten im Format String
 
-
+# Übertragen der Daten an distcalc
+# teilweise übernommen von: https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Publisher-And-Subscriber.html
 class MinimalPublisher(Node):
 
     def __init__(self):
@@ -23,6 +24,7 @@ class MinimalPublisher(Node):
 
         msg = String()
         msg.data = ser.readline().decode('utf-8').strip()
+        # wenn kein Signal vorhanden ist und somit kein Inhalt kommt wird timeout übertragen
         if not msg.data:
             msg.data = 'timeout'
         self.publisher_.publish(msg)
