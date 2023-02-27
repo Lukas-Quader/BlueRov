@@ -105,7 +105,7 @@ def main(args=None):
             print("No Signal")
             oldPosition = newPosition
         else:
-            # ist die länge des Strings größer als 
+            
             if len(gps_data) >= 4:
                 # lat und lon
                 lat1 = float(gps_data[2])
