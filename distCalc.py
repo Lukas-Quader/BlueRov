@@ -3,11 +3,11 @@ import time
 from numpy import sin, cos, arccos, pi, round
 from math import sin, cos, atan2, sqrt, radians, asin, degrees
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import String # Übertragene Daten im Format String
 
 gps_str = "Hallo Welt"
 
-#publish-shit
+# Übertragung des GPS Strings vom GPS_pub
 class MinimalSubscriber(Node):
 
     def __init__(self):
@@ -35,6 +35,7 @@ def deg2rad(degrees):
 
 
 # Die Funktion gibt die Entfernung zwischen zwei Koordinaten in Meter zurück
+# Quelle: https://de.martech.zone/calculate-great-circle-distance/
 def getDistance(latitude1, longitude1, latitude2, longitude2):
     
     theta = longitude1 - longitude2
@@ -55,7 +56,7 @@ def getDistance(latitude1, longitude1, latitude2, longitude2):
 # speed: die Geschwindigkeit des Objekts in km/h
 # time: die Zeitdauer, für die das Objekt reist, in Sekunden
 def getDestination(latitude, longitude, bearing, speed, time):
-    R = 6370.693  # Erdradius in km
+    R = 6370.693  # Erdradius in km (angepasst)(eigentlich 6371)
     
     # umwandeln von Breitengrad und Längengrad in Radiant
     lat1 = radians(latitude)
@@ -67,7 +68,7 @@ def getDestination(latitude, longitude, bearing, speed, time):
     # umwandeln von km/h zu km/s
     speed = speed / 3600
     
-    # distance berechnen
+    # distanz berechnen
     distance = speed * time
     
     # berechnen der neuen latitude und longitude
@@ -82,46 +83,37 @@ def getDestination(latitude, longitude, bearing, speed, time):
     
 
 def main(args=None):
-    #lat1 = 53.870004
-    #lon1 = 10.699840
-    #newPosition = getDestination(lat1, lon1, 90, 20, 3600)
-    #lat2 = newPosition[0]
-    #lon2 = newPosition[1]
-    #dist = getDistance(lat1, lon1, lat2, lon2)
-    #
-    #for x in range(6): 
-    #   newPosition = getDestination(lat1, lon1, 90 + 10 * x, 10 * x, 1) 
-    #   print(newPosition)
-#
-    #print(str(dist) + ' m')
-    #print(newPosition)
-    global gps_str
-    newPosition = (50.0,10.0)
-    
 
-
+    global gps_str # globale Variable GPS_String. Beinhaltet die übertragene Nachricht vom GPS_pub
+    newPosition = (50.0,10.0)  # aktuelle Position als Tuple (latitude, longitude)
     
-    koppel = 0
+    # koppel: Variable zeichnet auf wie lange das System im Koppelnavigationsmodus ist. 0 = keine Koppelnavigation
+    koppel = 0 
     while True:
         rclpy.init(args=args)
-        minimal_subscriber = MinimalSubscriber()
+        minimal_subscriber = MinimalSubscriber() 
         time.sleep(1)
         rclpy.spin_once(minimal_subscriber, executor=None, timeout_sec=0)
         minimal_subscriber.destroy_node()
         rclpy.shutdown()
-        gps_data = gps_str.split()
+        gps_data = gps_str.split() # aufteilen des übertragten Strings
+        # ist ein GPS-Signal verfügbar
         if gps_data[0] == "timeout":
             koppel += 1
+            # Eingabe der Sensorwerte (latitude, longitude, Richtung, km/h, sekunden)
             newPosition = getDestination(newPosition[0], newPosition[1], 90, 20, 1)
             print("No Signal")
             oldPosition = newPosition
         else:
+            # ist die länge des Strings größer als 
             if len(gps_data) >= 4:
                 # lat und lon
                 lat1 = float(gps_data[2])
                 lon1 = float(gps_data[3])
                 newPosition = (lat1, lon1)
+                # Gab es vorher eine Koppelnavigation
                 if koppel:
+                    # Ermitteln der Distanz zwischen dem Letzten Koppelnav. punkt und des ersten GPS-Punkts(Abweichung)
                     distance = getDistance(oldPosition[0], oldPosition[1], newPosition[0], newPosition[1]) 
                     print("Abweichung Koppelnavigation zum realen GPS nach "+ str(koppel) + "sek: " + str(distance) + "m" )
                     koppel = 0                   
