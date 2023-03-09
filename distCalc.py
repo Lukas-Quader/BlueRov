@@ -80,7 +80,39 @@ def getDestination(latitude, longitude, bearing, speed, time):
     lon2 = degrees(lon2)
     
     return (lat2, lon2)
+
+def getTransPosition(latitude, longitude, x, y):
     
+    # Berechnen einer neuen Koordinate die in x und y länge in metern entfernd ist
+    # lat (float): latitude der Referenzkoordinate
+    # lon (float): longitude der Referenzkoordinate
+    # dx (float): Distanz zur Referenzkoordinate in der ost-west Richtung (DVL)
+    # dy (float): Distanz zur Referenzkoordinate in der nord-süd Richtung (DVL)
+    # Return:
+    # returned die neue Koordinate als Tuple
+    
+    # Radius der Erde
+    R = 6378137.0
+
+    # Umwandeln zu radians
+    lat_rad = radians(lat)
+    lon_rad = radians(lon)
+
+    # Umwandeln der Distanz in Metern zu radians
+    d_lat = dy / R
+    d_lon = dx / (R * cos(lat_rad))
+
+    # Koordinaten berechnen
+    new_lat = lat_rad + d_lat
+    new_lon = lon_rad + d_lon
+
+    # zurück zu degree umwandeln
+    drlat = degrees(new_lat)
+    drlon = degrees(new_lon)
+
+    return (drlat, drlon) 
+
+       
 
 def main(args=None):
 
@@ -105,7 +137,7 @@ def main(args=None):
             print("No Signal")
             oldPosition = newPosition
         else:
-            
+            # ist die länge des Strings größer als 
             if len(gps_data) >= 4:
                 # lat und lon
                 lat1 = float(gps_data[2])
