@@ -10,7 +10,7 @@ class DvlPublisherNode(Node):
         self.publisher_ = self.create_publisher(String, 'dvl_data', 10)
         self.timer_ = self.create_timer(0.1, self.timer_callback)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(('192.168.178.52', 9002))
+        self.sock.connect(('192.168.0.102', 16171))
 
     def timer_callback(self):
         data = self.sock.recv(1024)
@@ -18,7 +18,8 @@ class DvlPublisherNode(Node):
         pos = 0
         while True:
             try:
-                json_data, pos = decoder.raw_decode(data[pos:])
+                data_str = data.decode("utf-8")
+                json_data, pos = decoder.raw_decode(data_str)
                 
                 msg = String()
                 msg.data = json.dumps(json_data)
