@@ -6,28 +6,23 @@ from rclpy.node import Node
 from std_msgs.msg import String # Übertragene Daten im Format String
 
 gps_str = "Hallo Welt"
-dvl_str = []
 
 # Übertragung des GPS Strings vom GPS_pub
 class MinimalSubscriber(Node):
 
-    def __init__(self, topic):
+    def __init__(self):
         super().__init__('minimal_subscriber')
         self.subscription = self.create_subscription(
             String,
-            topic,
+            'gps_data_topic',
             self.listener_callback,
             10)
         self.subscription  # prevent unused variable warning
 
     def listener_callback(self, msg):
         global gps_str
-        global dvl_str
-        msg_data = str(msg.data).split(",")
-        if "DVL" == msg_data[0]:
-            dvl_str = msg_data
         gps_str = str(msg.data)
-        
+        #self.get_logger().info('I heard: "%s"' % msg.data)
 
 
 def rad2deg(radians):
@@ -128,8 +123,7 @@ def main(args=None):
     koppel = 0 
     while True:
         rclpy.init(args=args)
-        minimal_subscriber = MinimalSubscriber('gps_data_topic') 
-        dvl_subscriber = MinimalSubscriber('dvl_data')
+        minimal_subscriber = MinimalSubscriber() 
         time.sleep(1)
         rclpy.spin_once(minimal_subscriber, executor=None, timeout_sec=0)
         minimal_subscriber.destroy_node()
