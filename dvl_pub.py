@@ -3,6 +3,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 import json
 import socket
+import time
 
 class DvlPublisherNode(Node):
     def __init__(self):
@@ -19,17 +20,23 @@ class DvlPublisherNode(Node):
         decoder = json.JSONDecoder()
         try:
             if data:
-                decode_data = decoder.raw_decode(data.decode())
-                if 'ts' in decode_data[0]:
-                    msg = String()
-                    msg.data = "DVL," + str(decode_data[0]["x"]) + "," + str(decode_data[0]["y"]) + "," + str(decode_data[0]["z"])
-                    self.publisher_.publish(msg)
-                    self.get_logger().info('Published: "%s"' % msg.data)
+
+                decode_data = decoder.raw_decode(data.decode())[0]
+                time.sleep(1)
+                print(decode_data)
+                #if 2 < 1:
+                if type(decode_data) is tuple:
+
+                    if 'ts' in decode_data:
+                        msg = String()
+                        msg.data = "DVL," + str(decode_data["x"]) + "," + str(decode_data["y"]) + "," + str(decode_data["z"])
+                        self.publisher_.publish(msg)
+                        self.get_logger().info('Published: "%s"' % msg.data)
 
         except json.JSONDecodeError as e:
             self.get_logger().info("JSONDecodeError")
 
-
+    
         
 
 def main(args=None):
