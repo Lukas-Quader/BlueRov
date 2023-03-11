@@ -6,24 +6,48 @@ from rclpy.node import Node
 from std_msgs.msg import String # Übertragene Daten im Format String
 
 gps_str = "Hallo Welt"
+dvl_str = []
 
 # Übertragung des GPS Strings vom GPS_pub
+
+'''
 class MinimalSubscriber(Node):
 
-    def __init__(self):
+    def __init__(self, topic):
         super().__init__('minimal_subscriber')
-        self.subscription = self.create_subscription(
-            String,
-            'gps_data_topic',
-            self.listener_callback,
-            10)
-        self.subscription  # prevent unused variable warning
+        if topic == 'gps_data':
+            self.subscription_gps = self.create_subscription(
+                String,
+                topic,
+                self.listener_callback_gps,
+                10)
+            self.subscription_gps  # prevent unused variable warning
+        else: 
+            self.subscription_dvl = self.create_subscription(
+                String,
+                topic,
+                self.listener_callback_dvl,
+                10)
+            self.subscription_dvl # prevent unused variable warning
 
-    def listener_callback(self, msg):
-        global gps_str
-        gps_str = str(msg.data)
-        #self.get_logger().info('I heard: "%s"' % msg.data)
+    def listener_callback_gps(self, msg):
+        global gps_str        
+        gps_str = msg.data
 
+    def listener_callback_dvl(self, msg):
+        global dvl_str
+        dvl_str = msg.data     
+'''
+
+def callback_dvl(msg):
+    global dvl_str
+    dvl_str = msg.data  
+    print('DVL Empfangene Nachricht: ' + msg.data)
+
+def callback_gps(msg):
+    global gps_str        
+    gps_str = msg.data
+    print('GPS Empfangene Nachricht: ' + msg.data)
 
 def rad2deg(radians):
     degrees = radians * 180 / pi
@@ -123,10 +147,20 @@ def main(args=None):
     koppel = 0 
     while True:
         rclpy.init(args=args)
-        minimal_subscriber = MinimalSubscriber() 
+        # minimal_subscriber = MinimalSubscriber('gps_data') 
+        # dvl_subscriber = MinimalSubscriber('dvl_data')
         time.sleep(1)
-        rclpy.spin_once(minimal_subscriber, executor=None, timeout_sec=0)
-        minimal_subscriber.destroy_node()
+        node = rclpy.create_node('distcalc')
+        dvl_sub = node.create_subscription(String, 'dvl_data', callback_dvl, 10)
+        gps_sub = node.create_subscription(String, 'gps_data', callback_gps, 10)
+
+        rclpy.spin_once(node, executor=None, timeout_sec=0)
+        #gps_sub.destroy_node()
+
+        #rclpy.spin_once(dvl_sub, executor=None, timeout_sec=0)
+        #dvl_sub.destroy_node()
+
+        node.destroy_node()
         rclpy.shutdown()
         gps_data = gps_str.split() # aufteilen des übertragten Strings
         # ist ein GPS-Signal verfügbar
