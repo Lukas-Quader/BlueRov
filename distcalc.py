@@ -142,26 +142,28 @@ def main(args=None):
 
     global gps_str # globale Variable GPS_String. Beinhaltet die übertragene Nachricht vom GPS_pub
     newPosition = (50.0,10.0)  # aktuelle Position als Tuple (latitude, longitude)
-    
+    rclpy.init(args=args)
+    # minimal_subscriber = MinimalSubscriber('gps_data') 
+    # dvl_subscriber = MinimalSubscriber('dvl_data')
+    time.sleep(1)
+    node = rclpy.create_node('distcalc')
+    dvl_sub = node.create_subscription(String, 'dvl_data', callback_dvl, 10)
+    gps_sub = node.create_subscription(String, 'gps_data', callback_gps, 10)
     # koppel: Variable zeichnet auf wie lange das System im Koppelnavigationsmodus ist. 0 = keine Koppelnavigation
     koppel = 0 
+    #gps_exec = rclpy.executors.Executor(context = None)
+    #gps_exec.add_node(gps_sub)
+    
     while True:
-        rclpy.init(args=args)
-        # minimal_subscriber = MinimalSubscriber('gps_data') 
-        # dvl_subscriber = MinimalSubscriber('dvl_data')
-        time.sleep(1)
-        node = rclpy.create_node('distcalc')
-        dvl_sub = node.create_subscription(String, 'dvl_data', callback_dvl, 10)
-        gps_sub = node.create_subscription(String, 'gps_data', callback_gps, 10)
+        
 
-        rclpy.spin_once(node, executor=None, timeout_sec=0)
+        
         #gps_sub.destroy_node()
-
-        #rclpy.spin_once(dvl_sub, executor=None, timeout_sec=0)
+        
+        rclpy.spin_once(gps_sub)
         #dvl_sub.destroy_node()
 
-        node.destroy_node()
-        rclpy.shutdown()
+        
         gps_data = gps_str.split() # aufteilen des übertragten Strings
         # ist ein GPS-Signal verfügbar
         if gps_data[0] == "timeout":
