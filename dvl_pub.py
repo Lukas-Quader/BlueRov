@@ -1,50 +1,37 @@
 import rclpy
-from rclpy.node import Node
-from std_msgs.msg import String
-import json
 import socket
-import time
+import json
+from rclpy.node import Node
+from std_msgs.msg import String # Übertragung der Daten im Format String
 
-class DvlPublisherNode(Node):
-    def __init__(self):
-        super().__init__('dvl_publisher')
-        self.publisher_ = self.create_publisher(String, 'dvl_data', 10)
-        self.timer_ = self.create_timer(0.1, self.timer_callback)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(('192.168.194.95', 16171))
 
-    def timer_callback(self):
-        
-       
-        data = self.sock.recv(2048)
-        decoder = json.JSONDecoder()
-        try:
-            if data:
 
-                decode_data = decoder.raw_decode(data.decode())[0]
-                time.sleep(1)
-                print(decode_data)
-                #if 2 < 1:
-                if type(decode_data) is tuple:
-
-                    if 'ts' in decode_data:
-                        msg = String()
-                        msg.data = "DVL," + str(decode_data["x"]) + "," + str(decode_data["y"]) + "," + str(decode_data["z"])
-                        self.publisher_.publish(msg)
-                        self.get_logger().info('Published: "%s"' % msg.data)
-
-        except json.JSONDecodeError as e:
-            self.get_logger().info("JSONDecodeError")
-
-    
-        
 
 def main(args=None):
     rclpy.init(args=args)
-    dvl_publisher = DvlPublisherNode()
-    rclpy.spin(dvl_publisher)
-    dvl_publisher.destroy_node()
-    rclpy.shutdown()
+    node = rclpy.create_node('dvl_pub')
+    dvl_pub = node.create_publisher(String, 'dvl_data', 10)
+
+    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # Bind and listen
+    serverSocket.bind(('192.168.194.95', 16171))
+    serverSocket.listen()
+    (clientConnected, clientAddress) = serverSocket.accept()
+    msg = String()
+
+    while True:     
+        dataFromClient = clientConnected.recv(2048)
+                        
+        try:            
+            decoder = json.JSONDecoder()
+            if dataFromClient:
+                decode_data = decoder.raw_decode(dataFromClient.decode())
+                if 'ts' in decode_data[0]:                    
+                    msg.data = "x: " + str(decode_data[0]["x"]) +" y: " + str(decode_data[0]["y"]) + " z: " + str(decode_data[0]["z"])
+                    dvl_pub.publish(msg)
+        except json.JSONDecodeError as e:
+            print("FAILED" + dataFromClient.decode())
+            continue
 
 if __name__ == '__main__':
     main()
