@@ -36,3 +36,7 @@ zum testen der Variablen `printenv | grep -i ROS`
 5. Builden des Package im Workspace `colcon build` (mit `--package-select NAME` können packages einzelnt gebuildet werden um Zeit zu sparen) 
 6. Beim ersten erstellen des Package `. install/local_setup.bash` ausführen
 7. Node ausführen wie in "Starten einer Node" beschrieben
+
+## Startup für direkte ethernet Connection zwischen DVL und Latte Panda
+ifconfig enp1s0 192.168.194.90/24
+
