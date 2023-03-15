@@ -11,12 +11,13 @@ def main(args=None):
     node = rclpy.create_node('gps_pub')
     gps_pub = node.create_publisher(String, 'gps_data', 10)
     #node = rclpy.create_node('gps_pub2')
-    gps_pub2 = node.create_publisher(String, 'gps_data2', 10)
+    #gps_pub2 = node.create_publisher(String, 'gps_data2', 10)
     
 
     ser = serial.Serial()
     ser.baudrate = 57600
     ser.port = '/dev/serial/by-id/usb-Emlid_ReachM2_8243BC05A02E4C66-if02'
+    ser.timeout = 0.25
     msg = String()
     ser.open()
     ser.flushInput() # flushen um veraltete Daten zu löschen
