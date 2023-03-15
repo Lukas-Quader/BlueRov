@@ -40,3 +40,8 @@ zum testen der Variablen `printenv | grep -i ROS`
 ## Startup für direkte ethernet Connection zwischen DVL und Latte Panda
 ifconfig enp1s0 192.168.194.90/24
 
+## rosbag benutzen
+Recording starten: ros2 run bag_recorder_nodes_py simple_bag_recorder
+Abspielen: ros2 bag play my_bag 
+
+
