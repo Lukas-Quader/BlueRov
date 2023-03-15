@@ -1,44 +1,24 @@
 import rclpy
-import time
+from std_msgs.msg import String
 from numpy import sin, cos, arccos, pi, round
 from math import sin, cos, atan2, sqrt, radians, asin, degrees
-from rclpy.node import Node
-from std_msgs.msg import String
 
-gps_str = "Hallo GPS"
-dvl_str = "Hallo DVL"
+gpsDataString = "Hallo GPS"
+dvlDataString = "DVL funktiont nicht"
 
-class GPS_Subscriber(Node):
+def dvl_callback(msg):
+    # globale Sensordaten Variablen
+    global dvlDataString 
+    dvlDataString = str(msg.data)
 
-    def __init__(self):
-        super().__init__('gps_subscriber')
-        self.subscription = self.create_subscription(
-            String,
-            'gps_data',
-            self.listener_callback,
-            10)
-        self.subscription  # prevent unused variable warning
+    print("Empfangene DVL-Daten: {}".format(msg.data))
 
-    def listener_callback(self, msg):
-        global gps_str
-        gps_str = str(msg.data)
-        #self.get_logger().info('I heard: "%s"' % msg.data)
+def gps_callback(msg):
+    # globale Sensordaten Variablen
+    global gpsDataString
+    gpsDataString = str(msg.data)
 
-class DVL_Subscriber(Node):
-
-    def __init__(self):
-        super().__init__('dvl_subscriber')
-        self.subscription = self.create_subscription(
-            String,
-            'dvl_data',
-            self.listener_callback,
-            10)
-        self.subscription  # prevent unused variable warning
-
-    def listener_callback(self, msg):
-        global dvl_str
-        dvl_str = str(msg.data)
-        #self.get_logger().info('I heard: "%s"' % msg.data)        
+    print("Empfangene GPS-Daten: {}".format(msg.data))
 
 
 def rad2deg(radians):
@@ -114,6 +94,7 @@ def getTransPosition(lat, lon, x, y):
     lon_rad = radians(lon)
 
     # Umwandeln der Distanz in Metern zu radians
+    d_lat = 1.0
     d_lat = y / R
     d_lon = x / (R * cos(lat_rad))
 
@@ -126,50 +107,73 @@ def getTransPosition(lat, lon, x, y):
     drlon = degrees(new_lon)
 
     return (drlat, drlon)
-    
 
 def main(args=None):
-    #lat1 = 53.870004
-    #lon1 = 10.699840
-    #newPosition = getDestination(lat1, lon1, 90, 20, 3600)
-    #lat2 = newPosition[0]
-    #lon2 = newPosition[1]
-    #dist = getDistance(lat1, lon1, lat2, lon2)
-    #
-    #for x in range(6): 
-    #   newPosition = getDestination(lat1, lon1, 90 + 10 * x, 10 * x, 1) 
-    #   print(newPosition)
-#
-    #print(str(dist) + ' m')
-    #print(newPosition)
-    global gps_str
-    global dvl_str
-    newPosition = (50.0,10.0)
-    
-    rclpy.init(args=args)
 
-    gps_subscriber = GPS_Subscriber()
-    dvl_subscriber = DVL_Subscriber()
+    # globale Sensordaten Variablen
+    global dvlDataString
+    global gpsDataString
+
+    # Positionsvariable
+    newPosition = (50.0, 20.0)
+
+    # Zählervariable für die Koppelnavigation
     koppel = 0
+
+    # Initialisieren von rclpy und erstellen des Nodes
+    rclpy.init(args=args)
+    subNode = rclpy.create_node('subscriber')
+
+    # Abonieren der DVL Daten
+    sub1 = subNode.create_subscription(String, 'dvl_data', dvl_callback, 10)
+    # Abonieren der GPS Daten
+    sub2 = subNode.create_subscription(String, 'gps_data', gps_callback, 10)
+
     while True:
-        time.sleep(1)
-        rclpy.spin_once(gps_subscriber, executor=None, timeout_sec=0)
-        rclpy.spin_once(dvl_subscriber, executor=None, timeout_sec=0)
-        print(dvl_str)
-        gps_data = gps_str.split()
-        dvl_data = dvl_str.split()
+        # Abrufen der Sensordaten
+        rclpy.spin_once(subNode)
+        print('DVL' + dvlDataString)
+        print('GPS' + gpsDataString)
+        
+        # Aufspalten der Sensordaten Strings
+        gps_data = gpsDataString.split()
+        dvl_data = dvlDataString.split()
+
+        # zwischenvariable für die aktuelle Position
         currentPosition = newPosition
+
+        # Ist das GPS Verfügbar?
+        # Wenn Kein GPS Signal da ist wird Koppelnavigation gestartet
         if gps_data[0] == "timeout":
+            #print('Koppelbereich')
+
+            # Variable zum Erfassen der Zeit wie lange die Koppelnavigation bisher geht
             koppel += 1
-            # eigene Koppelnavigation
+
+            # eigene Richtungskoppelnavigation            
             newPosition = getDestination(newPosition[0], newPosition[1], 90, 20, 1)
+
             # DVL Koppelnavigation
-            newDVLPosition = getTransPosition(currentPosition[0], currentPosition[1], dvl_data[0], dvl_data[1])
-            print(newDVLPosition)
-            print("No Signal")
-            oldPosition = newPosition
+            #print(currentPosition[0], currentPosition[1])
+
+            # Werden DVL-Daten empfangen?
+            if not dvl_data[0] == "DVL":
+                #print(dvl_data[1])
+                #print(dvl_data[3])
+
+                # Übersetzen der DVL Abweichung von Refernzkoordinate zu aktueller Koordinate
+                print(currentPosition[0], currentPosition[1], dvl_data[1], dvl_data[3])
+                newDVLPosition = getTransPosition(currentPosition[0], currentPosition[1], float(dvl_data[1]), float(dvl_data[3]))
+                print('DVL Position: ')
+                print(newDVLPosition)
+                print("Kein GPS Signal")
+                oldPosition = newPosition
+            else:
+                print("Das DVL sendet nicht")
+                print(dvl_data)
         else:
             if len(gps_data) >= 4:
+                print(gps_data)
                 # lat und lon aus der gps_data liste extarhieren
                 lat1 = float(gps_data[2])
                 lon1 = float(gps_data[3])
@@ -180,15 +184,11 @@ def main(args=None):
                     dvl_distance = getDistance(newDVLPosition[0], newDVLPosition[1], newPosition[0], newPosition[1])
                     print("Abweichung DVL Koppelnavigation zum realen GPS nach "+ str(koppel) + "sek: " + str(dvl_distance) + "m" )
                     print("Abweichung eigene Koppelnavigation zum realen GPS nach "+ str(koppel) + "sek: " + str(distance) + "m" )
-                    koppel = 0                   
-        print(newPosition)
-         
+                    koppel = 0    
 
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
+    # Clean up
+    subNode.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
