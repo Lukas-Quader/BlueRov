@@ -6,9 +6,16 @@ import time
 from rclpy.node import Node
 from std_msgs.msg import String # Übertragung der Daten im Format String
 
-MSG_COUNT = False
+# Flags zum variieren von zusätzlichen Sensorinformationen
+# Das zuschalten von zusätzlichen Sensorinformationen kann zu Fehlern in der distcalc.py führen
+
+# x, y, z Abweichung in Meter von der Referenzkoordinate
 MSG_XYZ = False
+# x, y, z + eine Counter zum überprüfen der Syncronität
+MSG_COUNT = False
+# alle Sensordaten der Koppelnavigation
 MSG_RAW_TS = False
+# alle Sensordaten
 MSG_RAW = True
 
 
