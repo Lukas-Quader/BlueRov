@@ -1,4 +1,5 @@
 import rclpy
+import time
 from std_msgs.msg import String
 from numpy import sin, cos, arccos, pi, round
 from math import sin, cos, atan2, sqrt, radians, asin, degrees
@@ -11,14 +12,14 @@ def dvl_callback(msg):
     global dvlDataString 
     dvlDataString = str(msg.data)
 
-    print("Empfangene DVL-Daten: {}".format(msg.data))
+    #print("Empfangene DVL-Daten: {}".format(msg.data))
 
 def gps_callback(msg):
     # globale Sensordaten Variablen
     global gpsDataString
     gpsDataString = str(msg.data)
 
-    print("Empfangene GPS-Daten: {}".format(msg.data))
+    #print("Empfangene GPS-Daten: {}".format(msg.data))
 
 
 def rad2deg(radians):
@@ -116,7 +117,12 @@ def main(args=None):
 
     # Positionsvariable
     newPosition = (50.0, 20.0)
+    oldPosition = (60.0, 10.0)
 
+    # Abstände zwischen Koppelposition und GPS-Position
+    distance = 0.0
+    dvl_distance = 0.0
+    
     # Zählervariable für die Koppelnavigation
     koppel = 0
 
@@ -130,14 +136,20 @@ def main(args=None):
     sub2 = subNode.create_subscription(String, 'gps_data', gps_callback, 10)
 
     while True:
+        print(' ')
+        time.sleep(1)
         # Abrufen der Sensordaten
         rclpy.spin_once(subNode)
-        print('DVL' + dvlDataString)
-        print('GPS' + gpsDataString)
+        print('DVL: ' + dvlDataString)
+        print('GPS: ' + gpsDataString)
         
         # Aufspalten der Sensordaten Strings
         gps_data = gpsDataString.split()
         dvl_data = dvlDataString.split()
+
+        # Eintragen der newPosition
+        if len(gps_data) > 3:
+            newPosition = (gps_data[2], gps_data[3])
 
         # zwischenvariable für die aktuelle Position
         currentPosition = newPosition
@@ -151,7 +163,7 @@ def main(args=None):
             koppel += 1
 
             # eigene Richtungskoppelnavigation            
-            newPosition = getDestination(newPosition[0], newPosition[1], 90, 20, 1)
+            #newPosition = getDestination(newPosition[0], newPosition[1], 90, 20, 1)
 
             # DVL Koppelnavigation
             #print(currentPosition[0], currentPosition[1])
@@ -162,15 +174,15 @@ def main(args=None):
                 #print(dvl_data[3])
 
                 # Übersetzen der DVL Abweichung von Refernzkoordinate zu aktueller Koordinate
-                print(currentPosition[0], currentPosition[1], dvl_data[1], dvl_data[3])
+                #print(currentPosition[0], currentPosition[1], dvl_data[1], dvl_data[3])
                 newDVLPosition = getTransPosition(currentPosition[0], currentPosition[1], float(dvl_data[1]), float(dvl_data[3]))
-                print('DVL Position: ')
-                print(newDVLPosition)
+                print('Referenzkoordinate: ' + str(currentPosition))
+                print('DVL Position: ' + str(newDVLPosition))
                 print("Kein GPS Signal")
                 oldPosition = newPosition
             else:
                 print("Das DVL sendet nicht")
-                print(dvl_data)
+                #print(dvl_data)
         else:
             if len(gps_data) >= 4:
                 print(gps_data)
