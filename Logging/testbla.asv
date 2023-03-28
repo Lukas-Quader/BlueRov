@@ -1,0 +1,6 @@
+x = names(:,"x");
+y = names(:,"y");
+z = names(:,"z");
+lat_arr = table2array(lat_table);
+
+plot(x)
