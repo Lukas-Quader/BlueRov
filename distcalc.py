@@ -4,6 +4,9 @@ from std_msgs.msg import String
 from numpy import sin, cos, arccos, pi, round
 from math import sin, cos, atan2, sqrt, radians, asin, degrees
 
+#Flags
+SYNC_MODE_ON = True
+
 gpsDataString = "Hallo GPS"
 dvlDataString = "DVL funktiont nicht"
 
@@ -130,22 +133,47 @@ def main(args=None):
     rclpy.init(args=args)
     subNode = rclpy.create_node('subscriber')
 
+    # distcalc publisher
+    distcalc_pub = subNode.create_publisher(String, 'distcalc_pub', 10)
     # Abonieren der DVL Daten
     sub1 = subNode.create_subscription(String, 'dvl_data', dvl_callback, 10)
     # Abonieren der GPS Daten
     sub2 = subNode.create_subscription(String, 'gps_data', gps_callback, 10)
 
+    gps_data = ''
+    sync_active = False
+
+    
+
     while True:
         print(' ')
         time.sleep(1)
+
+        # initialisieren des publisher Strings
+        msg = String()
+
         # Abrufen der Sensordaten
         rclpy.spin_once(subNode)
         print('DVL: ' + dvlDataString)
         print('GPS: ' + gpsDataString)
         
+        
         # Aufspalten der Sensordaten Strings
-        gps_data = gpsDataString.split()
+        # Falls sync active True ist werden die GPS Daten nicht mehr aktualisiert [Testmode]
+        if not sync_active:
+            gps_data = gpsDataString.split()
+        else: 
+            gps_data = ["timeout"]
         dvl_data = dvlDataString.split()
+        
+        # Aufbereitung der GPS-Daten zum publishen
+        gpspub_data = gpsDataString.split()
+        if len(gpspub_data) > 3:
+            msg.data = 'GPS: ' + gpspub_data[2]+ ' ' + gpspub_data[3]
+            
+        if SYNC_MODE_ON and not gps_data[0] == "timeout" and newPosition != (50.0, 20.0):            
+            sync_active = True
+            
 
         # Eintragen der newPosition
         if len(gps_data) > 3:
@@ -178,6 +206,7 @@ def main(args=None):
                 newDVLPosition = getTransPosition(currentPosition[0], currentPosition[1], float(dvl_data[1]), float(dvl_data[3]))
                 print('Referenzkoordinate: ' + str(currentPosition))
                 print('DVL Position: ' + str(newDVLPosition))
+                msg.data = msg.data + ' DVL: ' + str(newDVLPosition[0]) + ' ' + str(newDVLPosition[1]) + '\n'
                 print("Kein GPS Signal")
                 oldPosition = newPosition
             else:
@@ -197,6 +226,7 @@ def main(args=None):
                     print("Abweichung DVL Koppelnavigation zum realen GPS nach "+ str(koppel) + "sek: " + str(dvl_distance) + "m" )
                     print("Abweichung eigene Koppelnavigation zum realen GPS nach "+ str(koppel) + "sek: " + str(distance) + "m" )
                     koppel = 0    
+        distcalc_pub.publish(msg)
 
     # Clean up
     subNode.destroy_node()
